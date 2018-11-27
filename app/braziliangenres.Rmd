@@ -1,0 +1,219 @@
+---
+title: "Brazilian Genres"
+output:  
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+    background: pink
+    vertical_layout: scroll
+editor_options: 
+  chunk_output_type: console
+---
+
+
+Charts
+=======================================================================
+
+Row {data-height = 50}
+-----------------------------------------------------------------------
+
+```{r}
+library(tidyverse)
+
+# Base de gêneros
+genre <- chorrrds::genre
+
+da <- chorrrds::all %>% 
+  dplyr::mutate(date = stringr::str_extract(date, 
+                                            pattern = "[0-9]{4,}")) %>%
+  # Extrai apenas os anos
+  dplyr::mutate(date = as.numeric(date), # Deixa as datas como valores numéricos
+                acorde = stringr::str_extract(chord, # Extrai as partes fundamentais dos
+                                              pattern = "^([A-G]#?b?)")) %>%  # acordes
+  dplyr::filter(date > 1900) %>% # Mantém apenas os anos que fazem sentido
+  dplyr::left_join(genre, by = "artist") %>%  # Traz os gêneros dos artistas
+  dplyr::mutate(acorde = case_when( # Contribuição do 
+    acorde == "Db" ~ "C#",          # Julio Trecenti 
+    acorde == "Gb" ~ "F#",
+    acorde == "G#" ~ "Ab",
+    acorde == "A#" ~ "Bb",
+    acorde == "D#" ~ "Eb",
+    acorde == "E#" ~ "F",
+    acorde == "B#" ~ "C",
+    TRUE ~ acorde)) # Conversão de enarmonias
+
+feature_extraction <- function(da){
+  if(!is.null(da)){
+    da <- da %>% 
+      dplyr::mutate(
+        # Acordes menores
+        minor = stringr::str_detect(chord, "m") * 1,
+        # diminuto
+        dimi = stringr::str_detect(chord, "(dim|º)") * 1,
+        # aumentado
+        aum = stringr::str_detect(chord, "(aug|\\+)") * 1,
+        # sus 
+        sus = stringr::str_detect(chord, "(sus)") * 1,
+        # Acordes com sétima
+        seventh = stringr::str_detect(chord, "7") * 1,
+        # Acordes com sétima maior 
+        seventh_M = stringr::str_detect(chord, "7(M|\\+)" ) * 1,
+        # Acordes com sexta 
+        sixth = stringr::str_detect(chord, "(6|13)") * 1,
+        # Acordes com quarta (?)
+        fourth = stringr::str_detect(chord, "(4|11)") * 1,
+        # Acordes com quinta aumentada (?)
+        fifth_aug = stringr::str_detect(chord, "5(#|\\+)") * 1,
+        # Acordes com quartas
+        fifth_dim = stringr::str_detect(chord, "5(b|-)") * 1,
+        # Acordes com nona
+        ninth = stringr::str_detect(chord, "(9|2)") * 1,
+        # Acordes com baixos variantes 
+        bass = stringr::str_detect(chord, 
+                                   pattern = "(?<=/).*")*1
+      )
+    return(da)
+  }
+  
+}
+
+
+```
+
+### Mean of the number of distinct chords in the songs per year
+
+```{r}
+da_g <- da %>% 
+  # 2018 ainda não é um ano completo
+  dplyr::mutate(date < 2018) %>%  
+  # Agrupamento por data + acorde + musica
+  dplyr::group_by(date, genre, music, chord) %>% 
+  # Mantém os acordes distintos/ano
+  dplyr::summarise(distintos = n_distinct(chord)) %>% 
+  dplyr::summarise(cont = n()) %>% 
+  # Média de acordes distintos nas músicas/ano
+  dplyr::summarise(media = mean(cont), contagem = n()) 
+
+levels(da_g$genre)[2] <- "Forró" 
+# grafico
+p <- da_g %>% 
+  ggplot(aes(x = date, y = media)) +
+  geom_point(colour = "steelblue") +
+  facet_wrap("genre") +
+  scale_fill_hue(c = 55, l = 75) +
+  geom_smooth(aes(group = genre), 
+              span = 0.65, colour = "white",  
+              fill = "tan", method = "loess", size = 0.75) +
+  labs(x = "Years", y = "Mean of distinct chords
+       per music")
+
+# tema para deixar o gráfico bonitinho
+tema <- theme(
+  legend.position='none', 
+  axis.line = element_line(size = 0.5, colour = "tan"),
+  panel.grid.major = element_line(
+    colour = "black", size = 0.08, linetype = "dotted"),
+  panel.border = element_blank(),
+  panel.background = element_blank(),
+  strip.background = element_rect(colour = "tan", fill = "white", size = 0.6), 
+  strip.text = element_text(size = 14),
+  axis.title = element_text(size = 14),
+  axis.text = element_text(size = 12))
+  
+p + tema
+```
+
+
+### Artists
+
+```{r, fig.height=7.5}
+
+da_g <- da %>%   
+  dplyr::group_by(artist, genre, music) %>% # Agrupamento por artista + música
+  dplyr::summarise(distintos = n_distinct(chord)) %>% # Mantém os 
+                                                      # acordes distintos
+  dplyr::summarise(med = median(distintos), 
+                   contagem = n(),
+                   inf = quantile(distintos)[2],
+                   sup = quantile(distintos)[4]) # Obtém a
+                            # mediana e quantis de acordes distintos por música/artistas
+
+da_g$artist <- stringr::str_to_title(da_g$artist) 
+
+da_g %>%
+  dplyr::filter(med > 8) %>% 
+  ggplot(aes(x = reorder(artist, med), y = med)) +
+  geom_pointrange(aes(ymin = inf,
+                      ymax = sup,
+                      colour = genre),
+                  size = 0.7) + 
+  scale_colour_hue(c = 55, l = 75) +
+  coord_flip() +
+  theme(
+    axis.line = element_line(size = 0.5, 
+                             colour = "tan"),
+    panel.grid.major = element_line(colour = "black", 
+                                    size = 0.08, 
+                                    linetype = "dotted"),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.text = element_text(size = 12), 
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)) +
+  labs(colour = "Genre", 
+       x = "Artists", 
+       y = "First quartile, median and 
+       third quartile")
+
+
+
+```
+
+Chord Diagrams 
+=======================================================================
+
+
+
+
+Row {data-width=350, data-height=700}
+-----------------------------------------------------------------------
+
+### MPB
+
+<center>
+<iframe src="http://brunaw.com/docs/music/mpb.html" width=100% height = 450 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
+### Sertanejo
+
+<center>
+<iframe src="http://brunaw.com/docs/music/sertanejo.html" width=100% height = 450 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
+### Forró
+
+<center>
+<iframe src="http://brunaw.com/docs/music/forro.html" width=100% height = 450 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
+### Rock
+
+<center>
+<iframe src="http://brunaw.com/docs/music/rock.html" width=100% height = 450 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
+Row {data-width=350, data-height=700}
+-----------------------------------------------------------------------
+
+
+### Samba
+
+
+<center>
+<iframe src="http://brunaw.com/docs/music/samba.html" width=100% height = 450 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
+
+### Pop
+
+<center>
+<iframe src="http://brunaw.com/docs/music/pop.html" width=100% height = 450 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
+### Reggae
+
+<center>
+<iframe src="http://brunaw.com/docs/music/reggae.html" width=100% height = 450 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
