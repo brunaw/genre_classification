@@ -24,9 +24,6 @@ train <- db %>%
 
 
 # Group 1: triads
-#apenas as variáveis relacionadas
-# a acordes menores, com sétima,aumentados ou diminuto 
-# (ou seja, as tríades e acorde com sétima)
 
 m0 <- randomForest::randomForest(
   genre ~ minor + aum + dimi +  sus + seventh_min + seventh ,
@@ -36,8 +33,6 @@ m0 <- randomForest::randomForest(
 randomForest::varImpPlot(m0)
 
 # Grupo 2: adding tetrads
-# : o conjunto acima acrescido de 
-# variáveis sobre as quartas,sextas, sétimas maiores e nonas notas
 
 m1 <- randomForest::randomForest(
   genre ~ minor + dimi +  sus + aum + seventh_min + 
@@ -73,7 +68,7 @@ m3 <- randomForest::randomForest(
 randomForest::varImpPlot(m3)
 
 
-# predictions & confusion matrives ---------------------------------
+# predictions & confusion matrices ---------------------------------
 
 p0 <- predict(object = m0, newdata = test)
 

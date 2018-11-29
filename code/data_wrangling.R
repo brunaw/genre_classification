@@ -38,5 +38,17 @@ dim(da) # 483.991 rows
 
 da %>% count(music) %>% dim()  # 8339 songs
 
+da$genre <-   forcats::fct_collapse(factor(da$genre),
+                                    "Bossa Nova" = "Bossa nova",
+                                    "Forró" = "Forro",
+                                    "Sertanejo" = "Sertanejo",
+                                    "MPB" = "MPB",
+                                    "Pop" = "Pop",
+                                    "Reggae" = "Reggae",
+                                    "Rock" = "Rock",
+                                    "Samba" =  c("Samba",
+                                                 "Rita Lee"))
+levels(da$genre)
+
 # saving data
 saveRDS(da, "data/genre_data.rds")
