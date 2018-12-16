@@ -65,6 +65,7 @@ m3 <- randomForest::randomForest(
   proximity = TRUE,
   data = train)
 
+
 randomForest::varImpPlot(m3)
 
 
@@ -97,68 +98,78 @@ t3 <- as.matrix(cf3$table)
 round(t(t3)/ rowSums(t(cf3$table)), 2)
 
 # importance plots ----------------------------------
-imp0 <- randomForest::importance(m3)
-imp0 <- data.frame(var = dimnames(imp0)[[1]], 
-                   value = c(imp0))
 
-imp0$var <-   forcats::fct_collapse(factor(imp0$var),
-                                    "Bass" = "bass",
-                                    "Year" = "date", 
-                                    "+Common = Key" = "dif",
-                                    "% Diminished" = "dimi", 
-                                    "Dist. circle of fifths" = "do",
-                                    "Dist. in semitones" = "semitom",
-                                    "Qt. of most common chord" = "qtde",
-                                    "% Dim. Fifth" = "fifth_dim",
-                                    "% Augm. Fifth" = "fifth_aug",
-                                    "% Fourth" =  "fourth",
-                                    "% Minor" = "minor", 
-                                    "Total of chords" = "n", 
-                                    "% Ninth" = "ninth",
-                                    "Popularity" = "popul", 
-                                    "% Seventh" = "seventh",
-                                    "% Major seventh" = "seventh_M",
-                                    "% Seventh and minor" = "seventh_min",
-                                    "% Sus" = "sus",
-                                    "% Augmented" = "aum",
-                                    "% Sixth" = "sixth", 
-                                    "% Transition (1ª)" =
-                                      "trans_1",
-                                    "% Transition (2ª)" =
-                                      "trans_2",
-                                    "% Transition (3ª)" =
-                                      "trans_3")
+importance_plot <- function(model, group){
+  
+  m0 <- model  
+  imp0 <- randomForest::importance(m0)
+  imp0 <- data.frame(var = dimnames(imp0)[[1]], 
+                     value = c(imp0))
+  
+  imp0$var <-   forcats::fct_collapse(factor(imp0$var),
+                                      "Bass" = "bass",
+                                      "Year" = "date", 
+                                      "+Common = Key" = "dif",
+                                      "% Diminished" = "dimi", 
+                                      "Dist. circle of fifths" = "do",
+                                      "Dist. in semitones" = "semitom",
+                                      "Qt. of most common chord" = "qtde",
+                                      "% Dim. Fifth" = "fifth_dim",
+                                      "% Augm. Fifth" = "fifth_aug",
+                                      "% Fourth" =  "fourth",
+                                      "% Minor" = "minor", 
+                                      "Total of chords" = "n", 
+                                      "% Ninth" = "ninth",
+                                      "Popularity" = "popul", 
+                                      "% Seventh" = "seventh",
+                                      "% Major seventh" = "seventh_M",
+                                      "% Seventh and minor" = "seventh_min",
+                                      "% Sus" = "sus",
+                                      "% Augmented" = "aum",
+                                      "% Sixth" = "sixth", 
+                                      "% Transition (1st)" =
+                                        "trans_1",
+                                      "% Transition (2nd)" =
+                                        "trans_2",
+                                      "% Transition (3rd)" =
+                                        "trans_3")
+  
+  # creating a theme for ggplots
+  my_theme <- theme(
+    #legend.position='none', 
+    axis.ticks = element_blank(),
+    axis.line = element_line(size = 0.5, colour = "tan"),
+    panel.grid.major = element_line(
+      colour = "black", size = 0.08, linetype = "dotted"),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.background = element_rect(linetype="solid",
+                                     size = 0.3, colour = "tan"),
+    legend.key = element_rect(fill = "transparent", colour = "transparent"),
+    strip.background = element_rect(colour = "tan", fill = "white", size = 0.6), 
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12))
+  
+  
+  imp0$group <- group
+  
+  imp0 %>% 
+    arrange(var, value) %>% 
+    mutate(var = fct_reorder(factor(var),  value,  min)) %>% 
+    ggplot(aes(var, value)) +
+    geom_point(aes(colour = factor(group)), size = 3.5) +
+    scale_color_pomological() +
+    coord_flip() +
+    labs(colour = "Set",
+         x = "Variables", y = "Decrease in Gini criteria") +
+    my_theme
+  
+}
 
-# creating a theme for ggplots
-my_theme <- theme(
-  #legend.position='none', 
-  axis.ticks = element_blank(),
-  axis.line = element_line(size = 0.5, colour = "tan"),
-  panel.grid.major = element_line(
-    colour = "black", size = 0.08, linetype = "dotted"),
-  panel.border = element_blank(),
-  panel.background = element_blank(),
-  legend.background = element_rect(linetype="solid",
-                                   size = 0.3, colour = "tan"),
-  legend.key = element_rect(fill = "transparent", colour = "transparent"),
-  strip.background = element_rect(colour = "tan", fill = "white", size = 0.6), 
-  strip.text = element_text(size = 14),
-  axis.title = element_text(size = 14),
-  axis.text = element_text(size = 12))
 
+importance_plot(m0, group = c(1, 1, 1, 1, 1, 1))
+importance_plot(m1, group = c(1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2))
+importance_plot(m2, group = c(1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3))
+importance_plot(m3, group = c(1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4))
 
-imp0$group <- c(1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 
-                3, 3, 3,
-                4, 4, 4, 4, 4, 4, 4, 4)
-
-
-imp0 %>% 
-  arrange(var, value) %>% 
-  mutate(var = fct_reorder(factor(var),  value,  min)) %>% 
-  ggplot(aes(var, value)) +
-  geom_point(aes(colour = factor(group)), size = 3.5) +
-  scale_color_pomological() +
-  coord_flip() +
-  labs(colour = "Grroup of variables",
-       x = "Variables", y = "Decrease in Gini criteria") +
-  my_theme

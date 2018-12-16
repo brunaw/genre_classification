@@ -5,6 +5,7 @@
 #  ---------------------------------------------------------------
 library(tidyverse)
 library(RColorBrewer)
+library(ggpomological)
 
 da <- readRDS("data/genre_data.rds")
 db <- readRDS("data/extracted_features.rds")
@@ -81,7 +82,7 @@ da_means <- da %>%
 
 da_means %>% 
   ggplot(aes(x = date, y = media)) +
-  geom_point(colour = "steelblue") +
+  geom_point(colour = "red4") +
   facet_wrap("genre") +
   scale_fill_hue(c = 55, l = 75) +
   geom_smooth(aes(group = genre), 
@@ -90,7 +91,7 @@ da_means %>%
   labs(x = "Years", y = "Mean count of distinct chords per song") +
   my_theme
 
-
+summary(da_means$date)
 # chords diagrams -----------------------------------------------------
 library(chorddiag)
 #devtools::install_github("mattflor/chorddiag")
@@ -166,3 +167,42 @@ plots %>%
   labs(x = "Values", y = "Box plots") + 
   my_theme
   
+
+
+# Relationships between variables 
+db %>% 
+  ggplot(aes(sus, minor)) +
+  geom_point(aes(colour = genre)) +
+  scale_color_pomological() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_flip() +
+  labs(colour = "Music genre",
+       x = "% of suspended chords",
+       y = "% of minor chords") +
+  my_theme
+
+db %>% 
+  ggplot(aes(seventh, minor)) +
+  geom_point(aes(colour = genre)) +
+  scale_color_pomological() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_flip() +
+  labs(colour = "Music genre",
+       x = "% of chords with the 7th note",
+       y = "% of minor chords") +
+  my_theme
+
+
+db %>% 
+  ggplot(aes(aum, minor)) +
+  geom_point(aes(colour = genre)) +
+  scale_color_pomological() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  coord_flip() +
+  labs(colour = "Music genre",
+       x = "% of augmented chords",
+       y = "% of minor chords") +
+  my_theme
