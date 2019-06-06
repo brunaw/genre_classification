@@ -89,9 +89,10 @@ da_means %>%
               span = 0.65, colour = "white",  
               fill = "tan", method = "loess", size = 0.75) +
   labs(x = "Years", y = "Mean count of distinct chords per song") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   my_theme
 
-summary(da_means$date)
+
 # chords diagrams -----------------------------------------------------
 library(chorddiag)
 #devtools::install_github("mattflor/chorddiag")
